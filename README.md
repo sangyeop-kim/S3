@@ -5,7 +5,6 @@
     pip install -r requirements.txt
 
 ### Example
-'''console
     from S3 import AWS_s3
     aws = AWS_s3()
 
@@ -19,4 +18,3 @@
 
     # upload local file to s3 server
     aws.upload
-'''
