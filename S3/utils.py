@@ -1,7 +1,10 @@
 import numpy as np
-from typing import Tuple
+from typing import Tuple, List, TypeVar
 import json
 import boto3
+import os
+
+Bucket = TypeVar('s3.Bucket')
 
 def feature(name: str) -> Tuple[str, str, bool, int]:
     prefix = ('/').join(name.split('/')[:-1]) + '/'
@@ -11,7 +14,8 @@ def feature(name: str) -> Tuple[str, str, bool, int]:
     return name, prefix, folder, length
 
 
-def make_directory_view(bucket) -> None:
+
+def make_directory_view(bucket: Bucket) -> Tuple[str, List[str]]:
     file_list = list(map(lambda x : x.key, bucket.objects.all()))
 
     unique_dir = []
@@ -35,7 +39,7 @@ def make_directory_view(bucket) -> None:
         all_length.append(feature_[-1])
         new_file_list.append(feature(f))
 
-        
+    
     new_file_list.append(('', '', True, 1))
     all_folder.append(True)
     all_length.append(1)
@@ -45,7 +49,7 @@ def make_directory_view(bucket) -> None:
     start_idx = np.hstack((np.where(all_folder == True)[0], -1))
     end_idx = np.hstack((np.diff(start_idx[:-1]), len(all_folder)-start_idx[-2], -1)) + start_idx
 
-
+    output_str = ''
     for num1, (start, end) in enumerate(zip(start_idx[:-1], end_idx[:-1])):
         
         next_folder_len = new_file_list[start_idx[num1+1]][-1] # 다음 폴더 길이는?
@@ -68,48 +72,92 @@ def make_directory_view(bucket) -> None:
                     last_folder = True
             
             if num1 != 0 and file[-1] == 1: #대분류 시작 엔터
-                print()
+                output_str += '\n'
             
             if length == 1: # 길이가 1일 때
                 if folder:
-                    print(name)
+                    output_str += name + '\n'
                 else:
                     if last_file:
-                        print('└── ', name)
+                        output_str += '└── '+ name + '\n'
                     else:
-                        print('├── ', name)
+                        output_str += '├── ' + name + '\n'
             
                 '''To do'''
             elif last_folder: # 대분류 마지막인지?
                 if folder: # 폴더인지
-                    print('     ' * (length-2) + '│    ')
-                    print('     ' * (length-2) + '└── ', name)
+                    output_str += '     ' * (length-2) + '│    ' + '\n'
+                    output_str += '     ' * (length-2) + '└── ' + name + '\n'
+                    
                 else:
                     if last_file:
-                        print('     ' * (length-1) + '└── ', name)
+                        output_str += '     ' * (length-1) + '└── ' + name + '\n'
                     else:
-                        print('     ' * (length-1) + '├── ', name)
+                        output_str += '     ' * (length-1) + '├── ' + name + '\n'
                     
             else: 
                 if folder: # 폴더인지
                     if next_folder_len < length: # 밑에 폴더 더 있는지 확인
-                        print('│   ' * (length-2) + '│    ')
-                        print('│   ' * (length-2) + '└── ', name)
+                        output_str += '│   ' * (length-2) + '│    ' + '\n'
+                        output_str += '│   ' * (length-2) + '└── ' + name + '\n'
+
                     else:
-                        print('│   ' * (length-2) + '│    ')
-                        print('│   ' * (length-2) + '├── ', name)
+                        output_str += '│   ' * (length-2) + '│    ' + '\n'
+                        output_str += '│   ' * (length-2) + '├── ' + name + '\n'
+
                 else:
                     if last_file: 
                         if next_folder_len <= length:# 밑에 폴더 더 있는지 확인
                             if length == 2:
-                                print('│   ' + '└── ', name)
+                                output_str += '│   ' + '└── ' + name + '\n'
                             else: 
-                                print('│   ' * (length-2) + '     ' + '└── ', name)
+                                output_str += '│   ' * (length-2) + '     ' + '└── ' + name +'\n'
                         else:
-                            print('│   ' * (length-1) + '├── ', name)
+                            output_str += '│   ' * (length-1) + '├── ' + name + '\n'
                     else:
-                        print('│   ' * (length-1) + '├── ', name)
+                        output_str += '│   ' * (length-1) + '├── ' + name + '\n'
                         
+    return output_str, [i[0] for i in new_file_list[:-1]]
+
+
+def write_info_in_gitignore(path: str) -> bool:
+    if os.path.isdir(path):
+        git_path = path[:-4]
+
+        if os.path.isfile(git_path + '.gitignore'):
+            # open gitignore
+            with open(git_path + '.gitignore', 'r') as f:
+                ignore_list = f.read().splitlines()
+
+            # write secret_info.json in .gitignore
+            if not 'secret_info.json' in ignore_list:
+                with open(git_path + '.gitignore', 'a') as f:
+                    f.write('\n')
+                    f.write('secret_info.json')
+
+        else:
+            # make .gitignore file and write secret_info.json
+            with open(git_path + '.gitignore', 'w') as f:
+                f.write('secret_info.json')
+        return True
+    
+    else:
+        return False
+    
+    
+def find_gitignore() -> None:
+    path_list = ['.git', '../.git', '../../.git']
+    for path in path_list:
+        write = write_info_in_gitignore(path)
+        
+        if write:
+            find_ok = True
+            break
+            
+    if find_ok == False:
+        print("if you use git in the future, you must add secret_info.json in .gitignore!!")
+
+
                         
 if __name__ == '__main__':
     
@@ -127,5 +175,5 @@ if __name__ == '__main__':
                             aws_secret_access_key=aws_secret_access_key,
                             region_name=region
                             )
-    make_directory_view(session.resource('s3').Bucket(bucket_name))
+    print(make_directory_view(session.resource('s3').Bucket(bucket_name)))
     

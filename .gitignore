@@ -1,5 +1,5 @@
-secret_info.json
 __pycache__/
 .vscode/
 .ipynb_checkpoints/
 test/
+secret_info.json
