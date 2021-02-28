@@ -14,7 +14,7 @@
     aws.load(path)
     
     # download s3 file to local folder
-    aws.download(s3)
+    aws.download(s3_path, local_path)
 
     # upload local file to s3 server
-    aws.upload
+    aws.upload(local_path, s3_path)
