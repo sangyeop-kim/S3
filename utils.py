@@ -147,6 +147,8 @@ def write_info_in_gitignore(path: str) -> bool:
     
 def find_gitignore() -> None:
     path_list = ['.git', '../.git', '../../.git']
+    find_ok = False
+    
     for path in path_list:
         write = write_info_in_gitignore(path)
         
