@@ -54,6 +54,7 @@ def make_directory_view(bucket: Bucket) -> Tuple[str, List[str]]:
         
         next_folder_len = new_file_list[start_idx[num1+1]][-1] # 다음 폴더 길이는?
         
+        last_folder=True
         if all_length[start] == 1:
             last_folder = False
             
