@@ -15,7 +15,7 @@ class AWS_s3:
                 self, 
                 region: str = 'ap-northeast-2', 
                 bucket_name: str = 'rtm-ai',
-                save_json: bool = True):
+                save_json: bool = False):
         
         '''
         aws = AWS_s3()
@@ -61,7 +61,7 @@ class AWS_s3:
                 find_gitignore()
                 
             break
-        self.directory, self.file_list = make_directory_view(self.bucket)   
+        # self.directory, self.file_list = make_directory_view(self.bucket)   
             
             
     def load(self, key: str) -> pd.DataFrame:
@@ -123,7 +123,7 @@ class AWS_s3:
         bucket = s3.Bucket(bucket_name)
         
         try:
-            list(bucket.objects.all())
+            # list(bucket.objects.all())
             message = 'Connection success'
             
         except:
